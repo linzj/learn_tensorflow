@@ -1,5 +1,5 @@
 import numpy as np
-import math
+import math, random
 import tensorflow as tf
 
 
@@ -43,7 +43,6 @@ def build_graph(keep_prob = 1.0):
                 outputs.append(cell_output)
 
         output = tf.reshape(tf.concat(outputs, 1), [-1, hidden_size])
-        print(output.shape)
         softmax_w = tf.get_variable(
             "softmax_w", [hidden_size, vocab_size], dtype=tf.float32)
         softmax_b = tf.get_variable("softmax_b", [vocab_size], dtype=tf.float32)
@@ -51,11 +50,13 @@ def build_graph(keep_prob = 1.0):
         losses = tf.nn.softmax_cross_entropy_with_logits(labels=_targets, logits=logits)
         loss = tf.reduce_sum(losses)
         train_op = tf.train.AdagradOptimizer(learning_rate).minimize(loss)
-        return train_op, loss, r_inputs, r_targets
+        sample_op = tf.nn.softmax(logits, 0, name="sample_softmax")
+        sample_op = tf.argmax(sample_op, 1, name="sample_argmax")
+        return train_op, loss, r_inputs, r_targets, sample_op
         
 
 def main():
-    train_op, _loss, _inputs, _targets  = build_graph()
+    train_op, _loss, _inputs, _targets, sample_op  = build_graph()
     n = 0
     with tf.Session(graph=graph) as session:
       # We must initialize all variables before we use them.
@@ -70,6 +71,12 @@ def main():
                     _targets: targets})
             if n % 100 == 0:
                 print 'iter %d, loss: %f' % (n, loss) # print progress
+                #start_index = random.randint(20, total_size)
+                #sample_inputs = data[start_index:total_size] + data[0:start_index]
+                #inputs = [char_to_ix[ch] for ch in sample_inputs]
+                #sample_ix = session.run(sample_op, feed_dict = {_inputs: inputs})
+                #txt = ''.join(ix_to_char[ix] for ix in sample_ix)
+                #print '----\n %s \n----' % (txt, )
             n += 1
 
 if __name__ == '__main__':
